@@ -99,4 +99,4 @@ const MissionStats: React.FC<MissionStatsProps> = ({ stats }) => {
   );
 };
 
-export default MissionStats;
+export default React.memo(MissionStats);

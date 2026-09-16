@@ -34,4 +34,4 @@ const Header: React.FC<HeaderProps> = ({ view }) => {
   );
 };
 
-export default Header;
+export default React.memo(Header);

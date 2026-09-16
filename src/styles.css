@@ -589,10 +589,12 @@ body {
   transition: transform var(--transition), box-shadow var(--transition);
   cursor: default;
   animation: card-appear 0.4s ease both;
+  will-change: transform, box-shadow;
+  backface-visibility: hidden;
 }
 
 .evidence-card:hover {
-  transform: rotate(0deg) translateY(-4px) !important;
+  transform: rotate(0deg) translateY(-4px) translateZ(0) !important;
   box-shadow:
     4px 8px 24px rgba(0, 0, 0, 0.5),
     0 2px 6px rgba(0, 0, 0, 0.3);
