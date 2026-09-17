@@ -1,5 +1,8 @@
 import React, { useRef, useState, useCallback } from 'react';
-import ImageEditor from '@unlayer/react-image-editor';
+import ImageEditor, {
+  type ImageEditorRef,
+  type ImageEditorSaveResult,
+} from '@unlayer/react-image-editor';
 import { Evidence } from '../types';
 import { X, Save, Target, Route, StickyNote, Crosshair, Sparkles } from 'lucide-react';
 
@@ -16,12 +19,12 @@ const EditorModal: React.FC<EditorModalProps> = ({
   onCancel,
   onError,
 }) => {
-  const editorRef = useRef<any>(null);
+  const editorRef = useRef<ImageEditorRef>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [editorLoaded, setEditorLoaded] = useState(false);
 
   const handleSave = useCallback(
-    ({ dataUrl }: { dataUrl: string; blob: Blob }) => {
+    ({ dataUrl }: ImageEditorSaveResult) => {
       if (dataUrl) {
         onSave(evidence.id, dataUrl);
       }
@@ -33,19 +36,26 @@ const EditorModal: React.FC<EditorModalProps> = ({
   const handleSaveClick = useCallback(() => {
     setIsSaving(true);
     try {
-      const image = editorRef.current?.editor?.getImage();
-      if (image) {
-        onSave(evidence.id, image);
+      const dataUrl = editorRef.current?.editor?.getImage();
+      if (dataUrl) {
+        onSave(evidence.id, dataUrl);
+        setIsSaving(false);
+      } else {
+        // Fallback: wait for the onSave callback
         setIsSaving(false);
       }
     } catch {
-      // Fallback: the onSave prop will handle it
       setIsSaving(false);
     }
   }, [evidence.id, onSave]);
 
-  const handleError = useCallback(() => {
-    onError?.('Surveillance image unavailable. Try another image.');
+  const handleLoadError = useCallback(() => {
+    onError?.('Surveillance photo could not be decoded. Try another file.');
+  }, [onError]);
+
+  const handleError = useCallback((err: Error) => {
+    console.error('Unlayer Image Editor error:', err);
+    onError?.('Surveillance editor encountered an initialization error.');
   }, [onError]);
 
   return (
@@ -55,7 +65,7 @@ const EditorModal: React.FC<EditorModalProps> = ({
           <div className="editor-modal-title-area">
             <h2 className="editor-modal-title">EDIT SURVEILLANCE</h2>
             <p className="editor-modal-subtitle">
-              Mark anything your crew needs to know.
+              Mark tactical entry points, patrol paths, and targets for your crew.
             </p>
           </div>
 
@@ -81,7 +91,7 @@ const EditorModal: React.FC<EditorModalProps> = ({
         </div>
 
         <div className="editor-modal-body">
-          {/* Sidebar with field tool hints */}
+          {/* Tactical Sidebar with field tool hints */}
           <div className="editor-sidebar">
             <h3 className="editor-sidebar-title">FIELD TOOLS</h3>
             <div className="editor-tool-hints">
@@ -107,34 +117,35 @@ const EditorModal: React.FC<EditorModalProps> = ({
               </div>
             </div>
             <div className="editor-sidebar-note">
-              Use the editor tools to annotate this surveillance photograph.
+              Select tools from the right-hand panel to annotate and prepare intelligence for the fixer.
             </div>
           </div>
 
-          {/* The actual Unlayer Image Editor */}
+          {/* The official Unlayer Standalone Image Editor Component */}
           <div className="editor-container">
             {!editorLoaded && (
               <div className="editor-loading">
                 <Crosshair size={24} className="loading-icon-spin" />
-                <span>Loading surveillance editor...</span>
+                <span>Initializing Unlayer Surveillance Editor...</span>
               </div>
             )}
             <ImageEditor
               ref={editorRef}
               image={evidence.image}
+              minHeight="600px"
               options={{
                 theme: 'dark',
                 features: {
                   imageEditor: {
                     tools: {
-                      crop: false,
+                      filter: true,
+                      crop: true,
                       resize: false,
                       draw: true,
                       text: true,
                       shapes: true,
-                      stickers: false,
-                      frame: false,
-                      filter: true,
+                      stickers: true,
+                      frame: true,
                     },
                   },
                 },
@@ -142,6 +153,7 @@ const EditorModal: React.FC<EditorModalProps> = ({
               onSave={handleSave}
               onCancel={onCancel}
               onLoad={() => setEditorLoaded(true)}
+              onLoadError={handleLoadError}
               onError={handleError}
             />
           </div>
